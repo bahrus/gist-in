@@ -13,7 +13,7 @@ For the ideal scenario, we make heavy use of [declarative partial updates](https
 </select>
 
 
-<template gist-in="https://gist.githubusercontent.com/bahrus/3c9ed8541984b8cd38bc848edacf741a/raw/90e8c7ebfa3f63948f380d44d40b2663d19919e2/test.html" gist-for=""></template>
+<template gist-in="https://gist.githubusercontent.com/bahrus/3c9ed8541984b8cd38bc848edacf741a/raw/90e8c7ebfa3f63948f380d44d40b2663d19919e2/test.html" gist-for="options"></template>
 ```
 
 ## Viewing Locally
