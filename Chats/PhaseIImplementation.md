@@ -271,3 +271,127 @@ Yes.
 >  **No mention of `pipe-in`'s dedup/sharing, state attributes, or events.**
 
 Based on the fall back platform support, that provides no such support, I'm thinking we don't adopt something beyond what the platform supports.  But this can be revisited as more use cases are explored.
+
+---
+
+## Claude's Response II
+
+Short answer: **close, and I don't think anything left is a blocker** — a
+couple of small README fixes, two of my earlier suggestions you didn't react
+to yet (worth a yes/no before I scaffold so I build the right shape the first
+time), and the two research items you handed me, done below.
+
+### The `<?marker>` justification — checked it, it holds up
+
+I fetched the linked Chrome article rather than go on memory, since this is
+load-bearing for the whole design. It confirms your read precisely: the
+proposal's own examples are
+
+```html
+<div><?marker name="placeholder"></div>
+<template for="placeholder">Here is some <em>HTML content</em>!</template>
+```
+
+and the range form
+
+```html
+<div><?start name="x">Loading…<?end></div>
+```
+
+— i.e. `<?marker>` / `<?start>`/`<?end>` *are* the platform's own vocabulary
+for this, not something you invented in its shape. So "aligns with where the
+platform is headed" is accurate, not just aspirational. Convincing — I'd keep
+it.
+
+One nuance worth flagging, not as a problem with the choice, just for whoever
+writes the marker-finding code: the article's examples describe the
+*proposed* native behavior once a browser implements this feature end-to-end
+(where the platform's own patching may not need to expose these as ordinary
+`Comment` nodes to script at all — "patching without affecting the DOM" reads
+like the native implementation could special-case the tokens internally).
+Until/unless that ships, what gist-in's own userland code sees today, in a
+real browser parsing this markup right now, is still an ordinary bogus-comment
+`Comment` node (same HTML-tokenizer behavior as always — `<?` isn't a
+recognized construct in HTML proper yet). That doesn't change your decision at
+all — it just means the `TreeWalker`/`SHOW_COMMENT` approach is the correct
+*implementation technique* for gist-in's own scan, independent of whatever the
+platform eventually does natively once this ships for real.
+
+### The edit URL — inferable, and I verified it live rather than guess
+
+```
+raw:  https://gist.githubusercontent.com/<owner>/<id>/raw/<sha>/<file>
+edit: https://gist.github.com/<owner>/<id>/edit#file-<file, '.' → '-', lowercased>
+```
+
+Checked against the actual example gist in the README
+(`bahrus/3c9ed8541984b8cd38bc848edacf741a`, file `test.html`):
+
+- `https://gist.github.com/bahrus/3c9ed8541984b8cd38bc848edacf741a` → `200`,
+  the real gist page, and it contains `id="file-test-html"` — confirming the
+  anchor slug is just the filename with `.` → `-`, lowercased.
+- `.../edit` is a genuine, distinct route, not a redirect back to the plain
+  page — hitting it unauthenticated 302s to
+  `gist.github.com/auth/github?return_to=…%2Fedit`, i.e. GitHub itself sends
+  you *back to that same edit URL* after login. That's exactly "guarded by
+  github.com itself" — construct the `/edit#file-…` URL unconditionally, no
+  credential-awareness needed on gist-in's side at all, matching what you
+  already settled on.
+
+So: `<owner>/<id>` come from the parts of the raw URL already in hand,
+`<file>` is the already-known filename, slugified with a plain `.`→`-` +
+lowercase (I only verified one filename shape — worth a second real example if
+one ever has dots elsewhere in the name or non-ASCII characters, but the rule
+is simple enough I'd be surprised if it's more than that).
+
+### Two small README things to fix before implementation starts
+
+1. The sanitizer line has a broken link — `` `For now, this would always apply the standard, []"safe" sanitizing that pipe-in defaults to](https://github.com/bahrus/pipe-in#security).` `` — stray `[]` before the quote, so it won't render as a link at all. I think you want: `` the standard ["safe" sanitizing that pipe-in defaults to](https://github.com/bahrus/pipe-in#security) ``.
+2. `element.getElementRoot()` isn't a real DOM method — the actual API is
+   [`Node.getRootNode()`](https://developer.mozilla.org/en-US/docs/Web/API/Node/getRootNode)
+   (returns the `Document`, or the nearest `ShadowRoot`). Small, but worth
+   fixing before anyone implements against the name as written.
+
+Also purely cosmetic, not blocking: "Why comment markers?" bullet 1 is really
+answering "why a `<template>` for the fetch directive" (so it can sit anywhere,
+e.g. bottom of the page) — a different question from bullets 2–3 ("why a
+comment for the *marker*"). Might read clearer split into two short
+sub-answers, but that's a polish call, not a correctness one.
+
+### Two suggestions from my first pass I don't think you've weighed in on yet
+
+Everything else I raised got an answer; these two didn't, and both change what
+gets scaffolded, so I'd rather ask than guess:
+
+1. **Reuse `pipe-in`'s fetch/sanitize/stream code, even with none of its extra
+   state/event/sharing surface turned on.** You've settled "don't adopt
+   anything beyond what the platform supports" for *features* — but that's
+   orthogonal to whether the actual fetch-and-sanitize-and-stream-into-target
+   mechanics are a fresh implementation in `gist-in` or a call into `pipe-in`'s
+   existing, tested code for that one piece. Reusing it costs nothing feature-
+   wise (you'd just never touch the state/event/sharing bits) and means a bug
+   fix in one benefits both. Want that, or is `gist-in` meant to be fully
+   independent of `pipe-in` as a dependency?
+2. **Accept a `fifteenth` `gist://` USL as an alternative to a literal raw
+   URL.** Still on the table from before — purely additive, the literal URL
+   form keeps working either way. Worth doing for v1, or defer until there's
+   an actual use case for the alias indirection?
+
+If you'd rather not spend more time on either and just want me to pick the
+minimal path (no `pipe-in` dependency, literal URLs only) and start
+scaffolding, say so and I'll go — neither is a blocker, they're just the kind
+of thing that's cheap to decide now and annoying to redo after the fact.
+
+## Bruce's Response II
+
+>  **Reuse `pipe-in`'s fetch/sanitize/stream code
+
+Great idea.
+
+> **Accept a `fifteenth` `gist://` USL as an alternative to a literal raw
+   URL.**
+
+Sounds good.  Please proceed with implementation and add your implementation notes below.
+
+
+

@@ -25,9 +25,9 @@ We make heavy use of [declarative partial updates](https://developer.chrome.com/
 
 <?start> and <?end> markers would also be supported.
 
-## Why comment markers?
+## Why comment markers?  Why not indicate the target with a (custom) element
 
-1.  Only the template and script elements can be placed anywhere in the DOM without violating HTML decorum and/or having unexpected side effects, and using these elements (template, script) as place holders isn't really semantic.
+1.  For an alternative to comment markers to be viable, it must be placeable anywhere.  Only the template and script elements can be placed anywhere in the DOM without violating HTML decorum and/or having unexpected side effects, and using these elements (template, script) as place holders for where to insdert content isn't really semantic.
 2.  It aligns with how the platform envisions partially updating pages, as the link above indicates.  Hopefully, perhaps, in the future, the platform will provide easier API hooks to find such things, since it needs such abilities to implement its own requirements.
 3.  This enhancement is designed to lean on the platform where it can based on the newly minted syntax.
 
@@ -45,9 +45,9 @@ Searching for such markers can be rather taxing, requiring perhaps a TreeWalker 
 
 I'm thinking the template could be removed after serving its purpose.
 
-For now, this would always apply the standard, []"safe" sanitizing that pipe-in defaults to](https://github.com/bahrus/pipe-in#security).
+For now, this would always apply the standard, ["safe" sanitizing that pipe-in defaults to](https://github.com/bahrus/pipe-in#security).
 
-Searching is done within the element.getElementRoot(), so templates inside shadow Roots would only replace markers inside the shadow root.
+Searching is done within the element.getRootNode(), so templates inside shadow Roots would only replace markers inside the shadow root.
 
 
 ## Editing Support
