@@ -23,7 +23,7 @@ We make heavy use of [declarative partial updates](https://developer.chrome.com/
 <template gist-in="https://gist.githubusercontent.com/bahrus/3c9ed8541984b8cd38bc848edacf741a/raw/90e8c7ebfa3f63948f380d44d40b2663d19919e2/test.html" gist-in-for="options"></template>
 ```
 
-<?start> and <?end> markers would also be supported.
+\<?start> and \<?end> markers would also be supported.
 
 ## Why comment markers?  Why not indicate the target with a (custom) element
 
