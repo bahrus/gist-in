@@ -2,10 +2,10 @@
 
 This *gist-in* package provides:
 
-1.  An exportable module that JS-based web servers and JS-based build tools can use to embed a github based gist of html (and js, css, json phase II) into an html stream for optimal performance, as long as the gist responds in a timely manner.
-2.  A fallback element enhancement to request the gist resource in the browser client, and to patch the HTML with the delayed content.
+1.  An exportable module that JS-based web servers and JS-based build tools can use to embed a github based gist of html (and js, css, json phase II) into an html stream for optimal performance, as long as the gist responds in a timely manner. [Phase II]
+2.  A fallback element enhancement similar to [pipe-in](https://github.com/bahrus/pipe-in) to request the gist resource in the browser client, and to patch the HTML with the delayed content.
 
-For the ideal scenario, we make heavy use of [declarative partial updates](https://developer.chrome.com/docs/web-platform/declarative-partial-updates).
+We make heavy use of [declarative partial updates](https://developer.chrome.com/docs/web-platform/declarative-partial-updates), both in spirit and in use of upcoming api's.
 
 ```html
 <select>
@@ -13,8 +13,67 @@ For the ideal scenario, we make heavy use of [declarative partial updates](https
 </select>
 
 
-<template gist-in="https://gist.githubusercontent.com/bahrus/3c9ed8541984b8cd38bc848edacf741a/raw/90e8c7ebfa3f63948f380d44d40b2663d19919e2/test.html" gist-for="options"></template>
+
+...
+
+<!-- bottom of the page, typically -->
+
+<template gist-in="https://gist.githubusercontent.com/bahrus/3c9ed8541984b8cd38bc848edacf741a/raw/90e8c7ebfa3f63948f380d44d40b2663d19919e2/test.html" gist-in-for="options"></template>
 ```
+
+<?start> and <?end> markers would also be supported.
+
+## Why comment markers?
+
+1.  Only the template and script elements can be placed anywhere in the DOM without violating HTML decorum, and using these elements as place holders isn't really semantic.
+2.  It aligns with how the platform envisions partially updating pages, as the link above indicates.  Hopefully, perhaps, in the future, the platform will provide easier API hooks to find such things, since it needs such abilities to implement its own requirements.
+3.  This enhancement is designed to lean on the platform where it can based on the newly minted syntax.
+
+Searching for such markers can be rather taxing, requiring perhaps document.all (or xpath?), so perhaps a helper optimizer attribute should be supported that allows for a css query, that is expected to point to the parent of the marker(s):
+
+```html
+<select>
+<?marker name="options">
+</select>
+
+
+<template gist-in="https://gist.githubusercontent.com/bahrus/3c9ed8541984b8cd38bc848edacf741a/raw/90e8c7ebfa3f63948f380d44d40b2663d19919e2/test.html" gist-in-for="options" gist-in-for-hint="body select"></template>
+```
+
+
+I'm thinking the template could be removed after serving its purpose.
+
+For now, this would always apply the standard, "safe" sanitizing that pipe-in defaults to.
+
+Searching is done within the element.getElementRoot(), so templates inside shadow Roots would only replace markers inside the shadow root.
+
+
+## Editing Support
+
+If either an edit attribute is present:
+
+
+```html
+<template gist-in="https://gist.githubusercontent.com/bahrus/3c9ed8541984b8cd38bc848edacf741a/raw/90e8c7ebfa3f63948f380d44d40b2663d19919e2/test.html" gist-in-for="options" gist-in-show-edit-link></template>
+```
+
+Or a query string:
+
+location.href = '...?gist-in-show-link=true'
+
+Then add a hyperlink right after the template that allows the user (with appropriate credentials) to open the gist and make edits.
+
+If phase II is implemented, the server would replace the template above with something like:
+
+```html
+<template gist-in-resolved="https://gist.githubusercontent.com/bahrus/3c9ed8541984b8cd38bc848edacf741a/raw/90e8c7ebfa3f63948f380d44d40b2663d19919e2/test.html" for="options" gist-in-show-edit-link>
+    ...the contents of the link
+</template>
+<a href="urlToEditGist">Edit test.html</a>
+```
+
+But that will be worked out in more detail later.
+
 
 ## Viewing Locally
 
