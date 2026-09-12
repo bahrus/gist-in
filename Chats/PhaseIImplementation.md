@@ -225,4 +225,49 @@ assumptions you might want to correct first.
 > **`<?marker name="options">` is a comment node, not an element — this
    changes the whole discovery story.**
 
+> Given that, is `<?marker name="…">` — a syntax that *looks* like it wants
+     to be a distinct DOM node type but isn't one — the shape you want?
+
 I added an [explanation to the README.md](../README.md#) for why this more difficult path is being adopted.  Let me know if that is convincing or not.
+
+> so `document.all` doesn't help either (same
+     elements-only limitation)
+
+Thanks for the info.  I updated the README.md to reflect your insight.
+
+> **`gist-in-for` matching multiple markers / multiple parents.**
+
+Just as with the new platform api linked to in the README.md, the match should be based on the first one found.  The content should replace the markers, just as the platform does.
+
+> **Attribute-name drift between Phase I and the Phase II sketch.** 
+
+I got a little sloppy there.  But I was envisioning that server side substitutions indicate to the browser that the substitution already took place by replacing gist-in attribute with gist-in-resolved.
+
+Anyway, we can discuss that further should we ever decide to embark on phase II
+> he edit-link section names two different flags for what reads like one
+   feature:** the attribute is `gist-in-show-edit-link`, but the query-string
+   trigger is written as `?gist-in-show-link=true` (no "edit"). 
+
+Typo:  `?gist-in-show-edit-link=true`
+
+>  does `gist-in` need to actively know whether the current viewer *can* edit
+   (which implies some notion of a stored GitHub token/identity, the way
+   `fifteenth`'s `configureGist({ getToken })` works), or does it just render
+   a plain link to GitHub and let GitHub's own login wall turn away anyone
+   without access?
+
+The latter.  I updated the README.md to make that clearer, I hope.
+
+> worth confirming the exact GitHub URL shape before this gets built (gist edit
+   isn't a separate `/edit` route the way some GitHub resources have one; the
+   normal gist page is itself the edit UI when you're viewing as the owner).
+
+Correct.  I rely on your expertise to see if it is possible to infer the edit url from the raw one.
+
+> **Is the EMC/be-hive architecture assumed?**
+
+Yes.
+
+>  **No mention of `pipe-in`'s dedup/sharing, state attributes, or events.**
+
+Based on the fall back platform support, that provides no such support, I'm thinking we don't adopt something beyond what the platform supports.  But this can be revisited as more use cases are explored.

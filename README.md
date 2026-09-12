@@ -5,6 +5,8 @@ This *gist-in* package provides:
 1.  An exportable module that JS-based web servers and JS-based build tools can use to embed a github based gist of html (and js, css, json phase II) into an html stream for optimal performance, as long as the gist responds in a timely manner. [Phase II]
 2.  A fallback element enhancement similar to [pipe-in](https://github.com/bahrus/pipe-in) to request the gist resource in the browser client, and to patch the HTML with the delayed content.
 
+Note that github's gists play very nicely from a CORS point of view, so rest assured that should not impose any browser issues.
+
 We make heavy use of [declarative partial updates](https://developer.chrome.com/docs/web-platform/declarative-partial-updates), both in spirit and in use of upcoming api's.
 
 ```html
@@ -25,11 +27,11 @@ We make heavy use of [declarative partial updates](https://developer.chrome.com/
 
 ## Why comment markers?
 
-1.  Only the template and script elements can be placed anywhere in the DOM without violating HTML decorum, and using these elements as place holders isn't really semantic.
+1.  Only the template and script elements can be placed anywhere in the DOM without violating HTML decorum and/or having unexpected side effects, and using these elements (template, script) as place holders isn't really semantic.
 2.  It aligns with how the platform envisions partially updating pages, as the link above indicates.  Hopefully, perhaps, in the future, the platform will provide easier API hooks to find such things, since it needs such abilities to implement its own requirements.
 3.  This enhancement is designed to lean on the platform where it can based on the newly minted syntax.
 
-Searching for such markers can be rather taxing, requiring perhaps document.all (or xpath?), so perhaps a helper optimizer attribute should be supported that allows for a css query, that is expected to point to the parent of the marker(s):
+Searching for such markers can be rather taxing, requiring perhaps a TreeWalker (or xpath), so a helper optimizer attribute should be supported that allows for a css query, that is expected to point to the parent of the marker(s):
 
 ```html
 <select>
@@ -43,7 +45,7 @@ Searching for such markers can be rather taxing, requiring perhaps document.all 
 
 I'm thinking the template could be removed after serving its purpose.
 
-For now, this would always apply the standard, "safe" sanitizing that pipe-in defaults to.
+For now, this would always apply the standard, []"safe" sanitizing that pipe-in defaults to](https://github.com/bahrus/pipe-in#security).
 
 Searching is done within the element.getElementRoot(), so templates inside shadow Roots would only replace markers inside the shadow root.
 
@@ -59,9 +61,9 @@ If either an edit attribute is present:
 
 Or a query string:
 
-location.href = '...?gist-in-show-link=true'
+location.href = '...?gist-in-show-edit-link=true'
 
-Then add a hyperlink right after the template that allows the user (with appropriate credentials) to open the gist and make edits.
+Then add a hyperlink right after the template that allows the user (with appropriate credentials, as guarded by github.com itself) to open the gist and make edits.
 
 If phase II is implemented, the server would replace the template above with something like:
 
