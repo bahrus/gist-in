@@ -393,5 +393,173 @@ Great idea.
 
 Sounds good.  Please proceed with implementation and add your implementation notes below.
 
+---
+
+## Claude's Implementation Notes
+
+Implemented and tested against a real browser (Playwright's bundled
+Chromium). `npm test` green — **9/9**. Three things I verified along the way
+turned out to matter more than expected — leading with those since they
+changed the design from what we'd discussed.
+
+### Finding 1 — `<?marker>` is a real `ProcessingInstruction`, not a bogus comment
+
+My review said HTML has no PI node type and `<?…>` becomes a bogus
+`Comment`. **That was wrong for this browser.** Checked directly:
+
+```js
+document.createElement('div').appendChild(...)  // <?marker name="options">
+// → nodeType 7, constructor "ProcessingInstruction", target "marker",
+//   data 'name="options"', reserializes as <?marker name="options"?>
+```
+
+This build genuinely implements Declarative-Partial-Updates-style PI parsing
+— more advanced than plain HTML gives you today, and exactly what the Chrome
+article's examples imply, just more literally than I'd assumed. `#findMarker`
+uses `NodeFilter.SHOW_PROCESSING_INSTRUCTION` + `node.target === 'marker'` +
+parsing `name="…"` out of `.data` (which — unlike a comment — does *not*
+include the `marker` token itself; that's `.target`). Good news for you: this
+means the platform really is doing more of the work than my first read gave
+it credit for.
+
+### Finding 2 — `streamHTML` (and the whole `target[method]()` family) doesn't exist anywhere I can test; `setHTML`/`setHTMLUnsafe` do, right now
+
+Checked directly against the same real Chromium:
+
+```
+d.streamHTML             → undefined
+d.streamReplaceWithHTML  → undefined
+d.setHTML                → function   ✓ (real, shipped HTML Sanitizer API)
+d.setHTMLUnsafe          → function   ✓
+window.Sanitizer         → function   ✓
+```
+
+So `pipe-in.js`'s own default path (`target.streamHTML(options)`) would throw
+`"Method \"streamHTML\" is not supported on the target."` in this same
+browser, today — `pipe-in` doesn't currently have a test suite to have
+surfaced that. I didn't want to route gist-in through a call I'd just proven
+doesn't work anywhere real, so:
+
+- **Dropped** the `pipe-in/stream-fetch.js` I'd sketched (built around
+  `target[method]()`).
+- **Added `pipe-in/fetch-and-set.js`** instead — `fetchText(url, {cache,
+  start, end})` (fetch + reused `snip.js` for `[base]-start`/`[base]-end`)
+  and `setInto(target, text, {unsafe, sanitizer})` (→ `target.setHTML(text)`
+  by default, `.setHTML(text, {sanitizer: new Sanitizer(cfg)})` for a custom
+  config, `.setHTMLUnsafe(text)` when asked). Also verified `setHTML` works
+  correctly on a **fully detached** element — no live-DOM insertion needed for
+  the scratch element gist-in patches into before moving the result to the
+  marker's position.
+- This is a real, verified fix `pipe-in.js` itself would likely want too —
+  flagging it as a candidate follow-up, not doing it here (didn't want to
+  change pipe-in's own tested — well, *existing* — behavior as a side effect
+  of gist-in's implementation).
+
+### Finding 3 — the platform's *default* sanitizer strips `<option>` entirely
+
+The one I'd flag most prominently, because it directly undercuts the
+README's flagship example. Verified:
+
+```js
+div.setHTML('<option value="a">Alpha</option>')  →  '' (stripped)
+div.setHTMLUnsafe('<option value="a">Alpha</option>')  →  kept
+```
+
+"Always apply the standard, safe sanitizing" (your call, this conversation)
+means real `<option>` elements patched into a `<?marker>` inside a `<select>`
+— the README's own opening example — **come out empty** under gist-in's
+current, deliberately-safe-by-default behavior. I confirmed this isn't just a
+hypothetical: I fetched the actual referenced demo gist
+(`bahrus/3c9ed854.../test.html`) and its real content is
+`<select><option>a</option><option>b</option></select>` — so `demo/Example1.html`,
+run live, patches nothing into the marker (the `<option>`s are stripped, and
+the fetched content being a whole extra `<select>` rather than bare
+`<option>`s is its own separate wrinkle on top). I didn't silently "fix" this
+by switching to `setHTMLUnsafe` or a custom allow-list — that's a real
+security-posture choice, not an implementation bug, and it's the flagship
+example, so it seemed worth flagging rather than deciding.
+
+Options, not picked for you:
+1. Leave the default as-is; document that patching real form controls needs
+   an explicit opt-in (a `gist-in-sanitizer` attribute mirroring `pipe-in`'s,
+   or `gist-in-unsafe`) — same shape as `pipe-in`'s own `[base]-sanitizer` /
+   `*Unsafe` methods.
+2. Pick a different flagship example for the README that survives the
+   default sanitizer (e.g. patching a paragraph/list rather than `<option>`s).
+3. Decide the default sanitizer should be more permissive for gist-in
+   specifically (a curated allow-list including at least `option`/`optgroup`)
+   — a real, deliberate widening of what "safe" means here, not a bug fix.
+
+I wrote a test (`select-options-stripped.html`) that pins down and documents
+current behavior (options-empty-after-patch) rather than leaving it as a
+silent gap — easy to flip once you pick a direction.
+
+### What got built
+
+- **`gist-in.js`** — the `GistIn` enhancement (mount-observer/roundabout/be-hive,
+  same shape as `pipe-in.js`): `hydrate()` finds the marker
+  (`#findMarker`, PI-aware, `gist-in-for-hint`-scoped, first match wins, root
+  = `enhancedElement.getRootNode()` so shadow-scoped templates stay
+  shadow-scoped), fetches via `pipe-in/fetch-and-set.js` (or `fifteenth`'s
+  `get()` for a `gist://` USL), swaps the result in for the marker, removes
+  the template, and — if `gist-in-show-edit-link` or the page-wide
+  `?gist-in-show-edit-link=true` is set — appends a link to GitHub's own
+  edit view (`#buildEditLink`, verified live: `.../edit` really is a distinct
+  route, GitHub 302s an unauthenticated visit to sign-in with a `return_to`
+  back to that same URL — no client-side credential-awareness needed, exactly
+  as you said).
+- **`gist://` USL support** — the explicit `gist://<owner>/<id>/raw[/<sha>]/<file>`
+  form works standalone, no host-page setup: gist-in registers `fifteenth`'s
+  read-only `gist` protocol itself (`#ensureGistProtocol`, `readVia: 'raw'`)
+  *only if nothing already has* (checked via `getProtocolReader('gist')`), so
+  it never clobbers a host page's own write-capable `configureGist({getToken})`
+  setup. It never needs a token — gist-in only ever reads. An alias-form USL
+  (`gist://my-alias/raw/notes.html`) would resolve through the same code path,
+  but I didn't build a dedicated test for it: gist-in's own id-store starts
+  empty each load (`readVia:'raw'`'s default `locationHash` store), so an
+  alias only resolves to something if the *same page* independently populated
+  it — a real but more advanced integration (e.g. alongside a `be-persistent`
+  `💾` rule writing to that same gist) than Phase I needed to prove.
+- **`pipe-in/fetch-and-set.js`** (new, in the `pipe-in` repo) — see Finding 2.
+- **`types/gist-in/types.d.ts`** — added locally, matching `pipe-in`'s /
+  `be-persistent`'s type-doc convention. `types/` is the `bahrus/types`
+  submodule though — this file only exists in this local checkout until it's
+  pushed there separately; flagging so it doesn't look forgotten.
+- **`package.json`** — filled in from the stub (main, exports, files, scripts,
+  deps matching `be-persistent`'s current versions). One deliberate call:
+  `"pipe-in": "file:../pipe-in"` rather than a registry version — `pipe-in`'s
+  published version (`0.0.1`) predates `fetch-and-set.js`, and a `file:` link
+  meant I could actually build and test against it this session instead of
+  shipping unverified. Swap to a real semver range once `pipe-in` gets
+  republished with this file, the same way `fifteenth`'s version has been
+  bumped through this whole project.
+- Deferred, unchanged from the review: `<?start>`/`<?end>` range markers.
+  The Chrome article covers them, but we never nailed down the specific
+  behavior questions (does the "Loading…" placeholder between them stay
+  visible until replaced? does start/end scoping interact with `-for-hint`
+  the same way?) the way we did for the single-marker form, so I didn't want
+  to guess at those and ship it silently.
+
+### Tests (`npm test`, 9/9, Chromium only — `setHTML`/PI parsing aren't
+cross-browser yet either)
+
+`basic` (marker-in-a-`<select>` discovery + patch + template removal, using
+`<b>` content to isolate from Finding 3), `gist-in-for-hint` (two same-named
+markers, hint picks the right one), `not-found` (template left alone),
+`sanitize` (script + `onerror` stripped, safe markup kept, nothing executes),
+`edit-link` (href shape, stubbed CDN), `gist://` explicit raw-form USL
+(stubbed CDN, no `configureGist()` from the host page), the query-string
+edit-link override (both the on and off case), and the `<option>`-stripped
+characterization test from Finding 3.
+
+### Not done / open
+
+- The three sanitizer-default options above (Finding 3) — your call.
+- `demo/Example1.html` mirrors the README literally, but per Finding 3 it
+  won't visibly patch anything against the real referenced gist right now —
+  left as-is pending which Finding-3 option you pick, rather than quietly
+  swapping in different demo content.
+- Phase II (server-side embedding) — untouched, as scoped.
+
 
 
