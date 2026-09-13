@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>gist-in — basic marker replacement</title>
+    <!-- #include virtual="/imports.html" -->
+    <script type=module>
+        import 'be-hive/be-hive.js';
+    </script>
+</head>
+<body>
+    <be-hive>
+        <script type=emc src="gist-in/emc.json"></script>
+    </be-hive>
+
+    <!--
+      The marker lives inside a <select> to prove marker discovery works even
+      inside an element with a narrow content model (comments/processing
+      instructions are always allowed anywhere, regardless of what the
+      element otherwise permits as children) — see the "known limitation"
+      note in the implementation notes about *patching real <option>s* in,
+      specifically, which the default sanitizer strips. This fixture uses
+      <b> instead, which the default sanitizer keeps, to isolate that concern
+      from the "does the core mechanism work" question this test is for.
+    -->
+    <select id="sel">
+    <?marker name="options">
+    </select>
+
+    <template gist-in="/tests/fixtures/content.html" gist-in-for="options"></template>
+
+    <div id=target></div>
+    <script>
+        setTimeout(() => {
+            const bees = document.querySelectorAll('#sel b');
+            const templateGone = !document.querySelector('template[gist-in]');
+            if (bees.length === 2 && bees[0].textContent === 'Alpha' && bees[1].textContent === 'Beta' && templateGone) {
+                target.setAttribute('mark', 'good');
+            }
+        }, 1500);
+    </script>
+</body>
+</html>

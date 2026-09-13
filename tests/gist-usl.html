@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>gist-in — gist:// USL support</title>
+
+    <!-- Stub the raw CDN gist-in's fifteenth-backed gist:// path hits. -->
+    <script>
+        const realFetch = window.fetch.bind(window);
+        window.fetch = async (url, init) => {
+            const u = String(url);
+            if (u.startsWith('https://gist.githubusercontent.com/')) {
+                return new Response('<i>via fifteenth</i>', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+            }
+            return realFetch(url, init);
+        };
+    </script>
+
+    <!-- #include virtual="/imports.html" -->
+    <script type=module>
+        import 'be-hive/be-hive.js';
+    </script>
+</head>
+<body>
+    <be-hive>
+        <script type=emc src="gist-in/emc.json"></script>
+    </be-hive>
+
+    <!--
+      gist-in accepts fifteenth's gist:// USL as an alternative to a literal
+      https://gist.githubusercontent.com/... URL — here, the explicit
+      <owner>/<id>/raw/<file> form, which needs no configureGist() call from
+      the host page at all (gist-in registers the read-only protocol itself).
+    -->
+    <div id="host"><?marker name="thing2"></div>
+
+    <template gist-in="gist://testowner2/testid9999/raw/notes2.html" gist-in-for="thing2"></template>
+
+    <div id=target></div>
+    <script>
+        setTimeout(() => {
+            const patched = document.querySelector('#host i')?.textContent === 'via fifteenth';
+            const templateGone = !document.querySelector('template[gist-in]');
+            if (patched && templateGone) target.setAttribute('mark', 'good');
+        }, 1500);
+    </script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>gist-in — an import-map-mapped bare specifier can use setHTMLUnsafe</title>
+    <!-- #include virtual="/imports.html" -->
+    <script type=module>
+        import 'be-hive/be-hive.js';
+    </script>
+</head>
+<body>
+    <be-hive>
+        <script type=emc src="gist-in/emc.json"></script>
+    </be-hive>
+
+    <!--
+      "gist-in-test-fixtures/" -> "/tests/fixtures/" in imports.html. A bare
+      specifier resolved through the page's own import map is the second
+      trusted form (besides same-origin paths and gist:// USLs) — same rule
+      pipe-in.js applies for its own *Unsafe methods.
+    -->
+    <select id="sel">
+    <?marker name="options">
+    </select>
+
+    <template gist-in="gist-in-test-fixtures/real-options.html"
+              gist-in-for="options"
+              gist-in-method="setHTMLUnsafe"></template>
+
+    <div id=target></div>
+    <script>
+        setTimeout(() => {
+            const opts = document.querySelectorAll('#sel option');
+            const templateGone = !document.querySelector('template[gist-in]');
+            if (opts.length === 2 && templateGone) target.setAttribute('mark', 'good');
+        }, 1500);
+    </script>
+</body>
+</html>

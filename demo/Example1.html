@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gist-in Example 1</title>
+    <!-- #include virtual="/imports.html" -->
+    <script type=module>
+        import 'be-hive/be-hive.js';
+    </script>
+</head>
+<body>
+    <be-hive>
+        <script type=emc src="gist-in/emc.json"></script>
+    </be-hive>
+
+    <h1>gist-in — patch a gist into a marker</h1>
+    <p>
+        The <code>&lt;select&gt;</code> below starts with just its
+        <code>&lt;?marker name="options"&gt;</code>; the
+        <code>&lt;template gist-in&gt;</code> at the bottom fetches a public
+        gist's raw HTML and replaces the marker with it.
+    </p>
+
+    <select>
+    <?marker name="options">
+    </select>
+
+    <template gist-in="gist://bahrus/3c9ed8541984b8cd38bc848edacf741a/raw/90e8c7ebfa3f63948f380d44d40b2663d19919e2/test.html"
+              gist-in-for="options"
+              gist-in-method="setHTMLUnsafe"
+              gist-in-show-edit-link></template>
+</body>
+</html>

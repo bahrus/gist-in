@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>gist-in — ?gist-in-show-edit-link=true override</title>
+
+    <!-- Stub the raw CDN so this test needs no live network / real gist. -->
+    <script>
+        const realFetch = window.fetch.bind(window);
+        window.fetch = async (url, init) => {
+            const u = String(url);
+            if (u.startsWith('https://gist.githubusercontent.com/')) {
+                return new Response('<em>from gist</em>', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+            }
+            return realFetch(url, init);
+        };
+    </script>
+
+    <!-- #include virtual="/imports.html" -->
+    <script type=module>
+        import 'be-hive/be-hive.js';
+    </script>
+</head>
+<body>
+    <be-hive>
+        <script type=emc src="gist-in/emc.json"></script>
+    </be-hive>
+
+    <!--
+      No gist-in-show-edit-link attribute here — the spec navigates to this
+      page with ?gist-in-show-edit-link=true in the URL instead, which is the
+      only thing that should make the edit link appear.
+    -->
+    <div id="host"><?marker name="thing3"></div>
+
+    <template gist-in="https://gist.githubusercontent.com/testowner3/testid5555/raw/testsha/notes3.html"
+              gist-in-for="thing3"></template>
+
+    <div id=target></div>
+    <script>
+        setTimeout(() => {
+            const patched = !!document.querySelector('#host em');
+            const a = document.querySelector('a[href*="gist.github.com"]');
+            const hrefOk = a && a.href === 'https://gist.github.com/testowner3/testid5555/edit#file-notes3-html';
+            if (patched && hrefOk) target.setAttribute('mark', 'good');
+        }, 1500);
+    </script>
+</body>
+</html>

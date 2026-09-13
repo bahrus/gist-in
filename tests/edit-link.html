@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>gist-in — edit link</title>
+
+    <!-- Stub the raw CDN so this test needs no live network / real gist. -->
+    <script>
+        const realFetch = window.fetch.bind(window);
+        window.fetch = async (url, init) => {
+            const u = String(url);
+            if (u.startsWith('https://gist.githubusercontent.com/')) {
+                return new Response('<em>from gist</em>', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+            }
+            return realFetch(url, init);
+        };
+    </script>
+
+    <!-- #include virtual="/imports.html" -->
+    <script type=module>
+        import 'be-hive/be-hive.js';
+    </script>
+</head>
+<body>
+    <be-hive>
+        <script type=emc src="gist-in/emc.json"></script>
+    </be-hive>
+
+    <div id="host"><?marker name="thing"></div>
+
+    <template gist-in="https://gist.githubusercontent.com/testowner/testid1234/raw/testsha/notes.html"
+              gist-in-for="thing"
+              gist-in-show-edit-link></template>
+
+    <div id=target></div>
+    <script>
+        setTimeout(() => {
+            const a = document.querySelector('a[href*="gist.github.com"]');
+            const patched = !!document.querySelector('#host em');
+            const hrefOk = a && a.href === 'https://gist.github.com/testowner/testid1234/edit#file-notes-html';
+            if (a && patched && hrefOk) target.setAttribute('mark', 'good');
+        }, 1500);
+    </script>
+</body>
+</html>

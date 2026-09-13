@@ -1,0 +1,43 @@
+{
+    "enhConfig": {
+        "enhKey": "GistIn",
+        "spawn": "gist-in/gist-in.js",
+        "withAttrs": {
+            "base": "gist-in",
+            "_base": {
+                "mapsTo": "url",
+                "instanceOf": "String"
+            },
+            "markerName": "${base}-for",
+            "forHint": "${base}-for-hint",
+            "showEditLink": "${base}-show-edit-link",
+            "_showEditLink": {
+                "instanceOf": "Boolean"
+            },
+            "sanitizer": "${base}-sanitizer",
+            "_sanitizer": {
+                "instanceOf": "Object"
+            },
+            "method": "${base}-method"
+        }
+    },
+    "customData": {
+        "weakRef": {
+            "properties": [
+                "enhancedElement"
+            ]
+        },
+        "actions": {
+            "hydrate": {
+                "ifAllOf": [
+                    "url",
+                    "markerName",
+                    "enhancedElement"
+                ]
+            }
+        },
+        "defaultPropVals": {
+            "method": "setHTML"
+        }
+    }
+}

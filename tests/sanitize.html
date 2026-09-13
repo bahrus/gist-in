@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>gist-in — default sanitizing</title>
+    <!-- #include virtual="/imports.html" -->
+    <script type=module>
+        import 'be-hive/be-hive.js';
+    </script>
+</head>
+<body>
+    <be-hive>
+        <script type=emc src="gist-in/emc.json"></script>
+    </be-hive>
+
+    <div id="host"><?marker name="stuff"></div>
+
+    <template gist-in="/tests/fixtures/unsafe.html" gist-in-for="stuff"></template>
+
+    <div id=target></div>
+    <script>
+        setTimeout(() => {
+            const hasB = !!document.querySelector('#host b');
+            const scriptStripped = !document.querySelector('#host script');
+            const scriptDidNotRun = window.__ranScript !== true && window.__ranScript2 !== true;
+            if (hasB && scriptStripped && scriptDidNotRun) target.setAttribute('mark', 'good');
+        }, 1500);
+    </script>
+</body>
+</html>

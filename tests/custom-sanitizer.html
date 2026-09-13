@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>gist-in — gist-in-sanitizer allow-lists &lt;option&gt; without going fully unsafe</title>
+    <!-- #include virtual="/imports.html" -->
+    <script type=module>
+        import 'be-hive/be-hive.js';
+    </script>
+</head>
+<body>
+    <be-hive>
+        <script type=emc src="gist-in/emc.json"></script>
+    </be-hive>
+
+    <!--
+      A custom, narrower allow-list than gist-in-unsafe: keeps <option>, but
+      the fixture's own <script> (if it had one) would still be stripped,
+      unlike gist-in-unsafe. Proves gist-in-sanitizer reaches the real
+      Sanitizer constructor, same shape as pipe-in's [base]-sanitizer.
+    -->
+    <select id="sel">
+    <?marker name="options">
+    </select>
+
+    <template gist-in="/tests/fixtures/real-options.html"
+              gist-in-for="options"
+              gist-in-sanitizer='{"elements":["option"]}'></template>
+
+    <div id=target></div>
+    <script>
+        setTimeout(() => {
+            const opts = document.querySelectorAll('#sel option');
+            const templateGone = !document.querySelector('template[gist-in]');
+            if (opts.length === 2 && opts[0].value === 'a' && opts[1].value === 'b' && templateGone) {
+                target.setAttribute('mark', 'good');
+            }
+        }, 1500);
+    </script>
+</body>
+</html>

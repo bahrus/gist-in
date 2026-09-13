@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>gist-in — untrusted URL can't use gist-in-method=setHTMLUnsafe</title>
+    <!-- #include virtual="/imports.html" -->
+    <script type=module>
+        import 'be-hive/be-hive.js';
+    </script>
+</head>
+<body>
+    <be-hive>
+        <script type=emc src="gist-in/emc.json"></script>
+    </be-hive>
+
+    <!--
+      A literal cross-origin URL, not same-origin, not gist://, not mapped by
+      any import-map entry — the same security gate pipe-in.js applies must
+      reject the setHTMLUnsafe request here (no fetch should even happen).
+    -->
+    <div id="host"><?marker name="thing"></div>
+
+    <template gist-in="https://example.com/whatever/fixture.html"
+              gist-in-for="thing"
+              gist-in-method="setHTMLUnsafe"></template>
+
+    <div id=target></div>
+    <script>
+        setTimeout(() => {
+            const stillHasMarker = Array.from(document.getElementById('host').childNodes)
+                .some(n => n.nodeType === 7 /* PROCESSING_INSTRUCTION_NODE */);
+            const templateStillThere = !!document.querySelector('template[gist-in]');
+            if (stillHasMarker && templateStillThere) target.setAttribute('mark', 'good');
+        }, 1500);
+    </script>
+</body>
+</html>

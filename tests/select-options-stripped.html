@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>gist-in — known limitation: default sanitizer strips &lt;option&gt;</title>
+    <!-- #include virtual="/imports.html" -->
+    <script type=module>
+        import 'be-hive/be-hive.js';
+    </script>
+</head>
+<body>
+    <be-hive>
+        <script type=emc src="gist-in/emc.json"></script>
+    </be-hive>
+
+    <!--
+      Documents a real, verified limitation rather than leaving it silent:
+      the platform's *default* Sanitizer configuration (the one gist-in
+      always applies, per the README's "standard, safe sanitizing") does not
+      allow <option> — real <option> elements fetched this way are stripped
+      entirely, not just left unstyled. See the implementation notes.
+    -->
+    <select id="sel">
+    <?marker name="options">
+    </select>
+
+    <template gist-in="/tests/fixtures/real-options.html" gist-in-for="options"></template>
+
+    <div id=target></div>
+    <script>
+        setTimeout(() => {
+            const opts = document.querySelectorAll('#sel option');
+            const templateGone = !document.querySelector('template[gist-in]');
+            // Documenting current (sanitizer-driven) behavior: the template
+            // is still consumed/removed (gist-in did fetch + patch), but the
+            // <option>s themselves don't survive the default sanitizer.
+            if (opts.length === 0 && templateGone) {
+                target.setAttribute('mark', 'good');
+            }
+        }, 1500);
+    </script>
+</body>
+</html>

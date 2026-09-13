@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>for vs patchfor — native marker patching probe</title>
+    <style>
+        body { font: 15px/1.5 system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+        .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+        code { background: #eee; padding: .05rem .3rem; border-radius: 3px; }
+        .result { font-weight: 600; }
+        .yes { color: #0a7d29; }
+        .no { color: #c00; }
+    </style>
+</head>
+<body>
+    <h1>Native marker patching: <code>for</code> vs <code>patchfor</code></h1>
+    <p>
+        No gist-in, no pipe-in, no JS from us beyond reading the result — three
+        <code>&lt;template&gt;</code>s below use three different attribute
+        spellings against the same <code>&lt;?marker&gt;</code> pattern.
+        Needs Chrome Canary with <code>chrome://flags/#enable-experimental-web-platform-features</code>
+        enabled; a normal browser will just show all three markers unpatched
+        (harmless — that's the "no support here" case, not a failure).
+    </p>
+
+    <div class="card">
+        <h2>1 · <code>for</code></h2>
+        <div id="host-for"><?marker name="a"></div>
+        <template for="a">Hello via <code>for</code></template>
+        <p>Result: <span id="result-for" class="result"></span></p>
+    </div>
+
+    <div class="card">
+        <h2>2 · <code>patchfor</code></h2>
+        <div id="host-patchfor"><?marker name="b"></div>
+        <template patchfor="b">Hello via <code>patchfor</code></template>
+        <p>Result: <span id="result-patchfor" class="result"></span></p>
+    </div>
+
+    <div class="card">
+        <h2>3 · both attributes on one template</h2>
+        <div id="host-both"><?marker name="c"></div>
+        <template for="c" patchfor="c">Hello via both</template>
+        <p>Result: <span id="result-both" class="result"></span></p>
+    </div>
+
+    <script>
+        function report(hostId, resultId) {
+            const host = document.getElementById(hostId);
+            const patched = !Array.from(host.childNodes).some(n => n.nodeType === 7 /* PROCESSING_INSTRUCTION_NODE */);
+            const el = document.getElementById(resultId);
+            el.textContent = patched ? `patched — "${host.textContent.trim()}"` : 'marker still there (not patched)';
+            el.className = 'result ' + (patched ? 'yes' : 'no');
+        }
+        report('host-for', 'result-for');
+        report('host-patchfor', 'result-patchfor');
+        report('host-both', 'result-both');
+    </script>
+
+    <div class="card">
+        <p>
+            Verified 2026-09-13 against Chrome Canary 155.0.8055.0 with that
+            flag: <b>only <code>for</code> patches</b> — <code>patchfor</code>
+            (the name the flag's own description text uses) does nothing.
+            The flag description is stale relative to the shipped behavior;
+            the Chrome article's own examples (which use <code>for</code>) are
+            the ones that match reality.
+        </p>
+        <p>
+            Also verified separately (not shown on this page): the native
+            patch fires once, synchronously, at parse time. A
+            <code>&lt;template for="x"&gt;&lt;/template&gt;</code> left empty
+            at parse time and filled in later via script/fetch does <em>not</em>
+            get a second chance — the template is already consumed and removed
+            by the time anything async could populate it. That's the real
+            reason gist-in can't just hand this off to the platform: gist-in's
+            whole job is patching in content that arrives <em>after</em> parse
+            time (a fetched gist), which is exactly the case this native
+            mechanism doesn't cover yet.
+        </p>
+    </div>
+</body>
+</html>

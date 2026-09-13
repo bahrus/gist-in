@@ -1,7 +1,7 @@
 {
   "name": "gist-in",
-  "version": "0.0.0",
-  "description": "",
+  "version": "0.0.1",
+  "description": "Patch a GitHub Gist's raw HTML into a named <?marker> placeholder, client-side (fallback) and, eventually, server-side (Phase II).",
   "homepage": "https://github.com/bahrus/gist-in#readme",
   "bugs": {
     "url": "https://github.com/bahrus/gist-in/issues"
@@ -13,8 +13,33 @@
   "license": "MIT",
   "author": "Bruce B. Anderson <anderson.bruce.b@gmail.com>",
   "type": "module",
-  "main": "index.js",
+  "main": "gist-in.js",
+  "exports": {
+    ".": "./gist-in.js",
+    "./gist-in.js": "./gist-in.js",
+    "./emc.json": "./emc.json"
+  },
+  "files": [
+    "*.*"
+  ],
+  "types": "./types/gist-in/types.d.ts",
   "scripts": {
-    "test": "playwright test"
+    "build": "node emc.mjs > emc.json",
+    "serve": "node ./node_modules/spa-ssi/serve.js",
+    "test": "playwright test",
+    "safari": "npx playwright wk http://localhost:8000",
+    "update": "ncu -u && npm install"
+  },
+  "dependencies": {
+    "assign-gingerly": "0.0.96",
+    "be-hive": "0.1.18",
+    "fifteenth": "0.0.7",
+    "mount-observer": "0.1.53",
+    "pipe-in": "file:../pipe-in",
+    "roundabout-lib": "0.0.36"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "spa-ssi": "0.0.28"
   }
 }

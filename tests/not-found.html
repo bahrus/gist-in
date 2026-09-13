@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>gist-in — marker not found</title>
+    <!-- #include virtual="/imports.html" -->
+    <script type=module>
+        import 'be-hive/be-hive.js';
+    </script>
+</head>
+<body>
+    <be-hive>
+        <script type=emc src="gist-in/emc.json"></script>
+    </be-hive>
+
+    <!-- no <?marker name="nope"> anywhere on this page -->
+    <template gist-in="/tests/fixtures/content.html" gist-in-for="nope"></template>
+
+    <div id=target></div>
+    <script>
+        setTimeout(() => {
+            // Not found -> gist-in leaves the template alone rather than remove it.
+            const stillThere = !!document.querySelector('template[gist-in="/tests/fixtures/content.html"][gist-in-for="nope"]');
+            if (stillThere) target.setAttribute('mark', 'good');
+        }, 1500);
+    </script>
+</body>
+</html>
